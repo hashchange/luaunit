@@ -63,3 +63,4 @@ test/some_lists_comparisons.txt
 
 #Emacs
 *~
+.idea/
