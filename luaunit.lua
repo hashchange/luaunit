@@ -9,7 +9,30 @@ License: BSD License, see LICENSE.txt
 Version: 3.2
 ]]--
 
-require("math")
+-- Fixes for Lightroom
+
+-- The `require("math")` statement causes an error in LR, but math is available without it.
+pcall( function()
+    require( "math" )
+end )
+
+-- The `print` function is missing in LR. Replace by LrLogger in an LR context.
+-- todo make LrLogger configurable by args, enable here if using default logger
+local LrLogger, logger
+pcall( function()
+    LrLogger = import "LrLogger"
+    logger = LrLogger( "TestHarness" )
+end )
+logger = logger or function () end
+
+local print = type( print ) == "function" and print or function ( message, level )
+    level = type( level ) == "string" and level ~= "" and level or "info"
+    logger[level]( logger, message )
+end
+
+-- The os.exit() method is not available in LR. Replace with noop.
+if not os.exit then os.exit = function () end end
+
 local M={}
 
 -- private exported functions (for testing)
@@ -2297,7 +2320,9 @@ end
             currentNode = nil,
             suiteStarted = true,
             startTime = os.clock(),
-            startDate = os.date(os.getenv('LUAUNIT_DATEFMT')),
+            -- os.getenv() is not supported in LR. A simple os.date() call will do here.
+            -- startDate = os.date(os.getenv('LUAUNIT_DATEFMT')),
+            startDate = os.date(),
             startIsodate = os.date('%Y-%m-%dT%H:%M:%S'),
             patternIncludeFilter = self.patternIncludeFilter,
             tests = {},
